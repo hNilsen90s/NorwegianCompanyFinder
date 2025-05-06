@@ -20,12 +20,83 @@ Dette skriptet lar deg hente data om norske selskaper fra Brønnøysundregistere
 
 ## Installasjon
 
-Skriptet krever Python 3.6 eller nyere, og det eneste eksterne biblioteket som benyttes er `requests`.
+### Forutsetninger: Installere Python
 
-### Alternativ 1: Bruk requirements.txt (anbefalt)
+Skriptet krever Python 3.6 eller nyere. Hvis du ikke har Python installert, følg instruksjonene nedenfor:
+
+#### Windows
+
+1. Besøk [Python.org](https://www.python.org/downloads/windows/)
+2. Last ned nyeste Python 3-versjon (f.eks. Python 3.11)
+3. Kjør installasjonsfilen
+4. **Viktig:** Huk av for "Add Python to PATH" under installasjonen
+5. Velg "Install Now"
+
+For å verifisere installasjonen, åpne Command Prompt og skriv:
+```
+python --version
+```
+
+#### macOS
+
+**Alternativ 1: Homebrew (anbefalt)**
+1. Installer [Homebrew](https://brew.sh/) hvis du ikke har det:
+   ```bash
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   ```
+2. Installer Python med Homebrew:
+   ```bash
+   brew install python
+   ```
+
+**Alternativ 2: Installer direkte**
+1. Besøk [Python.org](https://www.python.org/downloads/macos/)
+2. Last ned nyeste Python 3-versjon
+3. Kjør installasjonsfilen
+
+For å verifisere installasjonen, åpne Terminal og skriv:
+```bash
+python3 --version
+```
+
+#### Linux (Ubuntu/Debian)
+```bash
+sudo apt update
+sudo apt install python3 python3-pip
+```
+
+### Verifisere pip-installasjon
+
+Pip er Python sin pakkebehandler og burde være installert sammen med Python.
+
+**Windows:**
+```bash
+pip --version
+```
+
+**macOS/Linux:**
+```bash
+pip3 --version
+```
+
+Om pip ikke er installert eller trenger oppdatering:
+
+**Windows:**
+```bash
+python -m ensurepip --upgrade
+```
+
+**macOS/Linux:**
+```bash
+python3 -m ensurepip --upgrade
+```
+
+### Installere prosjektet
+
+#### Alternativ 1: Bruk requirements.txt (anbefalt)
 
 1. Klon eller last ned dette repository til din maskin
-2. Åpne terminalen og naviger til mappen der du lastet ned filene
+2. Åpne terminalen/Command Prompt og naviger til mappen der du lastet ned filene
 3. Kjør følgende kommando for å installere alle nødvendige pakker:
 
 **Windows:**
@@ -38,7 +109,7 @@ pip install -r requirements.txt
 pip3 install -r requirements.txt
 ```
 
-### Alternativ 2: Manuell installasjon
+#### Alternativ 2: Manuell installasjon
 
 Hvis du foretrekker å installere pakkene manuelt:
 
@@ -50,6 +121,24 @@ pip install requests
 **macOS/Linux:**
 ```bash
 pip3 install requests
+```
+
+#### Anbefalt: Bruk et virtuelt miljø
+
+Det er god praksis å bruke et virtuelt miljø for Python-prosjekter:
+
+**Windows:**
+```bash
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+**macOS/Linux:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
 ```
 
 ## Bruk
@@ -120,6 +209,17 @@ Du kan finne flere næringskoder på [Brønnøysundregisteret](https://www.brreg
 - Hvis skriptet kjører men ingen resultater returneres, sjekk at næringskoden eksisterer
 - Ved problemer med installasjon, sørg for at du har Python 3.6 eller nyere installert og at pip er oppdatert
 - På Mac kan det hende du må bruke `python3` og `pip3` i stedet for `python` og `pip`
+- Hvis du får "command not found" for python/pip, må du sørge for at Python er lagt til i PATH-miljøvariabelen
+
+### Vanlige installasjonsutfordringer
+
+**Windows:**
+- "Python er ikke gjenkjent som en intern kommando": Reinstaller Python og sørg for å krysse av for "Add Python to PATH"
+- Problemer med administratorrettigheter: Kjør Command Prompt som administrator
+
+**macOS:**
+- "Command not found: pip": Bruk `pip3` i stedet for `pip`
+- Problemer med rettigheter: Prøv å legge til `sudo` foran pip-kommandoer
 
 ## Teknisk informasjon
 
