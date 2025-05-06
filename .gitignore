@@ -52,8 +52,11 @@ venv.bak/
 
 # CSV-filer (data kan bli stor)
 # Fjern denne linjen hvis du vil ha med CSV-filer i Git
-*.csv
+# *.csv
 
 # OS-specific
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Electron application directory
+electron-app/ 
