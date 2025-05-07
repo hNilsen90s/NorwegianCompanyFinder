@@ -31,10 +31,10 @@ def parse_arguments():
         description="Hent selskapsdata fra Brønnøysundregisteret basert på næringskode"
     )
     parser.add_argument(
-        "--naeringskode", "-n", 
-        type=str, 
-        default=DEFAULT_INDUSTRY_CODE, 
-        help=f"Næringskode for selskaper som skal hentes (f.eks. {DEFAULT_INDUSTRY_CODE} for reklamebyrå)"
+        "--industry", "--industry-code", "--naeringskode", "-n",
+        type=str,
+        default=DEFAULT_INDUSTRY_CODE,
+        help=f"Industry code for companies to fetch (e.g. {DEFAULT_INDUSTRY_CODE} for advertising agency)"
     )
     parser.add_argument(
         "--output", "-o", 

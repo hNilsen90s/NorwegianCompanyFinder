@@ -151,18 +151,18 @@ Du kan kjøre skriptet fra kommandolinjen med ulike parametere:
 
 **Windows:**
 ```bash
-python main.py --naeringskode 73.11 --output reklamebyraaer.csv
+python main.py --industry 73.11 --output reklamebyraaer.csv
 ```
 
 **macOS/Linux:**
 ```bash
-python3 main.py --naeringskode 73.11 --output reklamebyraaer.csv
+python3 main.py --industry 73.11 --output reklamebyraaer.csv
 ```
 
 ### Parametere
 
-- `--naeringskode` eller `-n`: Næringskode for selskaper som skal hentes (f.eks. 73.11 for reklamebyrå)
-- `--output` eller `-o`: Navn på output CSV-fil. Standard er [næringskode]_selskaper.csv
+- `--industry` eller `-n`: Industry code for companies to fetch (e.g. 73.11 for advertising agency)
+- `--output` eller `-o`: Navn på output CSV-fil. Standard er [industry]_selskaper.csv
 - `--fields` eller `-f`: Kommaseparert liste (på engelsk) over felter som skal inkluderes i CSV-filen. Tilgjengelige felter: `name`, `orgnr`, `incorporation_date`, `registration_date`, `email`, `phone`, `mobile`, `website`, `address`, `zipcode`, `state`, `street`, `in_liquidation`, `employees`. Standard er alle felter.
 - `--limit` eller `-l`: Maksimalt antall selskaper som skal lastes ned (standard: ingen grense)
 - `--filter`: **Avansert:** Filteruttrykk for å kun inkludere selskaper som matcher bestemte kriterier. Se eksempler og forklaring under.
@@ -253,24 +253,24 @@ Hente reklamebyrå (standard):
 python3 main.py
 ```
 
-Hente regnskapskontor (næringskode 69.201):
+Hente regnskapskontor (industry code 69.201):
 ```bash
-python3 main.py --naeringskode 69.201 --output regnskapsbyra.csv
+python3 main.py --industry 69.201 --output regnskapsbyra.csv
 ```
 
-Hente dataprogrammering (næringskode 62.01):
+Hente dataprogrammering (industry code 62.01):
 ```bash
 python3 main.py -n 62.01 -o itselskaper.csv
 ```
 
 Hente kun 100 selskaper med alle felter:
 ```bash
-python3 main.py --naeringskode 73.11 --limit 100 --output reklamebyra.csv
+python3 main.py --industry 73.11 --limit 100 --output reklamebyra.csv
 ```
 
 Hente kun navn, organisasjonsnummer, e-post og nettside for reklamebyrå:
 ```bash
-python3 main.py --fields "name,orgnr,email,website" --naeringskode 73.11 --output test_companies.csv
+python3 main.py --fields "name,orgnr,email,website" --industry 73.11 --output test_companies.csv
 ```
 
 Se seksjonen "Fleksibelt filter med --filter" over for avanserte filter-eksempler og full forklaring.
@@ -279,12 +279,12 @@ Se seksjonen "Fleksibelt filter med --filter" over for avanserte filter-eksemple
 
 **Eksempel 1: Hent regnskapskontor med ansatte, e-post, nettside, ikke under avvikling, stiftet etter 2010, kun utvalgte felter, maks 5 selskaper**
 ```bash
-python3 main.py --naeringskode 69.201 --fields "name,orgnr,email,website,employees,incorporation_date" --filter "employees and email and website and not in_liquidation and incorporation_date > '2010-01-01'" --limit 5 --output regnskapskontor_etter2010.csv
+python3 main.py --industry 69.201 --fields "name,orgnr,email,website,employees,incorporation_date" --filter "employees and email and website and not in_liquidation and incorporation_date > '2010-01-01'" --limit 5 --output regnskapskontor_etter2010.csv
 ```
 
 **Eksempel 2: Hent IT-selskaper (62.01) med mobilnummer, registrert etter 2015, og hvor e-post ikke er tom, maks 3 selskaper**
 ```bash
-python3 main.py --naeringskode 62.01 --fields "name,orgnr,mobile,email,registration_date" --filter "mobile and email and registration_date > '2015-01-01'" --limit 3 --output it_selskaper_nye.csv
+python3 main.py --industry 62.01 --fields "name,orgnr,mobile,email,registration_date" --filter "mobile and email and registration_date > '2015-01-01'" --limit 3 --output it_selskaper_nye.csv
 ```
 
 ## Vanlige næringskoder
