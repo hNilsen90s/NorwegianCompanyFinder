@@ -273,20 +273,19 @@ Hente kun navn, organisasjonsnummer, e-post og nettside for reklamebyrå:
 python3 main.py --fields "name,orgnr,email,website" --naeringskode 73.11 --output test_companies.csv
 ```
 
-**Filtrere selskaper med filter:**
+Se seksjonen "Fleksibelt filter med --filter" over for avanserte filter-eksempler og full forklaring.
 
-- Kun selskaper med e-post og telefonnummer:
-  ```bash
-  python3 main.py --filter "email and phone"
-  ```
-- Kun selskaper med nettside:
-  ```bash
-  python3 main.py --filter "website"
-  ```
-- Kun selskaper med e-post, men ikke telefon, og ansatte, og e-post er "ok@test.com":
-  ```bash
-  python3 main.py --filter "email and not phone and employees and email == 'ok@test.com'"
-  ```
+#### Avanserte eksempler
+
+**Eksempel 1: Hent regnskapskontor med ansatte, e-post, nettside, ikke under avvikling, stiftet etter 2010, kun utvalgte felter, maks 5 selskaper**
+```bash
+python3 main.py --naeringskode 69.201 --fields "name,orgnr,email,website,employees,incorporation_date" --filter "employees and email and website and not in_liquidation and incorporation_date > '2010-01-01'" --limit 5 --output regnskapskontor_etter2010.csv
+```
+
+**Eksempel 2: Hent IT-selskaper (62.01) med mobilnummer, registrert etter 2015, og hvor e-post ikke er tom, maks 3 selskaper**
+```bash
+python3 main.py --naeringskode 62.01 --fields "name,orgnr,mobile,email,registration_date" --filter "mobile and email and registration_date > '2015-01-01'" --limit 3 --output it_selskaper_nye.csv
+```
 
 ## Vanlige næringskoder
 
