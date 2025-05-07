@@ -49,7 +49,7 @@ Skriptet krever Python 3.6 eller nyere. Hvis du ikke har Python installert, føl
 4. **Viktig:** Huk av for "Add Python to PATH" under installasjonen
 5. Velg "Install Now"
 
-For å verifisere installasjonen, åpne Command Prompt og skriv:
+For å verifisere installasjonen, åpne Kommandoprompt og skriv:
 ```
 python --version
 ```
@@ -112,8 +112,8 @@ python3 -m ensurepip --upgrade
 
 #### Alternativ 1: Bruk requirements.txt (anbefalt)
 
-1. Klon eller last ned dette repository til din maskin
-2. Åpne terminalen/Command Prompt og naviger til mappen der du lastet ned filene
+1. Klon eller last ned dette prosjektet til din maskin
+2. Åpne terminalen/Kommandoprompt og naviger til mappen der du lastet ned filene
 3. Kjør følgende kommando for å installere alle nødvendige pakker:
 
 **Windows:**
@@ -160,7 +160,7 @@ pip3 install -r requirements.txt
 
 ## Bruk
 
-Du kan kjøre skriptet fra kommandolinjen med ulike parametere:
+Du kan kjøre skriptet fra kommandolinjen med ulike parametere. Eksempler på bruk finner du under.
 
 **Windows:**
 ```bash
@@ -174,8 +174,8 @@ python3 main.py --industry 73.11 --output reklamebyraaer.csv
 
 ### Parametere
 
-- `--industry` eller `-i`: Industry code for companies to fetch (e.g. 73.11 for advertising agency)
-- `--output` eller `-o`: Navn på output CSV-fil. Standard er [industry]_selskaper.csv
+- `--industry` eller `-i`: Næringskode for selskaper som skal hentes (f.eks. 73.11 for reklamebyrå)
+- `--output` eller `-o`: Navn på output CSV-fil. Standard er [næringskode]_selskaper.csv
 - `--fields` eller `-f`: Kommaseparert liste (på engelsk) over felter som skal inkluderes i CSV-filen.
 
 **Alle tilgjengelige felter for --fields/-f:**
@@ -327,37 +327,37 @@ python3 main.py --fin --filter "net_profit > 1000000"
 
 ### Eksempler
 
-Hente reklamebyrå (standard):
+Hent reklamebyrå (standard):
 ```bash
 python3 main.py
 ```
 
-Hente reklamebyrå med finansielle nøkkeltall:
+Hent reklamebyrå med finansielle nøkkeltall:
 ```bash
 python3 main.py --fin
 ```
 
-Hente reklamebyrå med finansielle nøkkeltall og maks 10 selskaper:
+Hent reklamebyrå med finansielle nøkkeltall og maks 10 selskaper:
 ```bash
 python3 main.py --industry 73.11 --limit 10 --fin
 ```
 
-Hente regnskapskontor (industry code 69.201) med finansielle nøkkeltall:
+Hent regnskapskontor (næringskode 69.201) med finansielle nøkkeltall:
 ```bash
 python3 main.py --industry 69.201 --fin --output regnskapsbyra.csv
 ```
 
-Hente dataprogrammering (industry code 62.01) med finansielle nøkkeltall:
+Hent dataprogrammering (næringskode 62.01) med finansielle nøkkeltall:
 ```bash
 python3 main.py -i 62.01 --fin -o itselskaper.csv
 ```
 
-Hente kun 100 selskaper med alle felter og finansielle nøkkeltall:
+Hent kun 100 selskaper med alle felter og finansielle nøkkeltall:
 ```bash
 python3 main.py --industry 73.11 --limit 100 --fin --output reklamebyra.csv
 ```
 
-Hente kun navn, organisasjonsnummer, e-post og nettside for reklamebyrå (uten finans):
+Hent kun navn, organisasjonsnummer, e-post og nettside for reklamebyrå (uten finans):
 ```bash
 python3 main.py --fields "name,orgnr,email,website" --industry 73.11 --output test_companies.csv
 ```
@@ -414,7 +414,7 @@ Du kan finne flere næringskoder på [Brønnøysundregisteret](https://www.brreg
 
 **Windows:**
 - "Python er ikke gjenkjent som en intern kommando": Reinstaller Python og sørg for å krysse av for "Add Python to PATH"
-- Problemer med administratorrettigheter: Kjør Command Prompt som administrator
+- Problemer med administratorrettigheter: Kjør Kommandoprompt som administrator
 
 **macOS:**
 - "Command not found: pip": Bruk `pip3` i stedet for `pip`
