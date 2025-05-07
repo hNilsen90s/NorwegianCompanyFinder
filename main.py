@@ -41,13 +41,71 @@ def parse_arguments():
         type=str, 
         help="Navn på output CSV-fil. Standard er [næringskode]_selskaper.csv"
     )
+    parser.add_argument(
+        "--fields", "-f",
+        type=str,
+        help=(
+            "Kommaseparert liste over felter som skal inkluderes i CSV. "
+            "Tilgjengelige felter: name, orgnr, incorporation_date, registration_date, "
+            "email, phone, mobile, website, address, zipcode, state, street, in_liquidation, employees. "
+            "Standard er alle felter."
+        )
+    )
+    parser.add_argument(
+        "--limit", "-l",
+        type=int,
+        default=None,
+        help="Maksimalt antall selskaper som skal lastes ned (standard: ingen grense)"
+    )
+    parser.add_argument(
+        "--filter",
+        type=str,
+        default=None,
+        help=(
+            "Valgfritt: Filteruttrykk for å kun inkludere selskaper som matcher. "
+            "Eksempel: 'email and not phone and employees and email == \"ok@test.com\"'. "
+            "Tilgjengelige felter: name, orgnr, incorporation_date, registration_date, email, phone, mobile, website, address, zipcode, state, street, in_liquidation, employees."
+        )
+    )
     
     args = parser.parse_args()
     
     # Bruk standard filnavn hvis ikke spesifisert
     if not args.output:
         args.output = f"{args.naeringskode.replace('.', '_')}_selskaper.csv"
-    
+
+    # Define field mapping and default order (all English)
+    field_map = {
+        "name": "Name",
+        "orgnr": "OrgNo",
+        "incorporation_date": "IncorporationDate",
+        "registration_date": "RegistrationDate",
+        "email": "Email",
+        "phone": "Phone",
+        "mobile": "Mobile",
+        "website": "Website",
+        "address": "Address",
+        "zipcode": "Zipcode",
+        "state": "State",
+        "street": "Street",
+        "in_liquidation": "InLiquidation",
+        "employees": "Employees"
+    }
+    default_fields = list(field_map.keys())
+
+    # Håndter --fields
+    if args.fields:
+        requested = [f.strip().lower() for f in args.fields.split(",") if f.strip()]
+        # Filtrer ut ugyldige felter
+        selected_fields = [f for f in requested if f in field_map]
+        if not selected_fields:
+            print(f"Ingen gyldige felter valgt i --fields. Tilgjengelige: {', '.join(field_map.keys())}")
+            sys.exit(1)
+    else:
+        selected_fields = default_fields
+
+    args.selected_fields = selected_fields
+    args.field_map = field_map
     return args
 
 
@@ -88,155 +146,136 @@ def fetch_companies_page(url, params=None, page_number=0):
         return None, None
 
 
-def extract_company_data(company):
+def extract_company_data(company, selected_fields, field_map, all_fields=False):
     """
-    Trekker ut relevant data fra et selskaps JSON-objekt.
-    
-    Args:
-        company (dict): JSON-data for ett selskap
-    
-    Returns:
-        dict: Renset og formatert selskapsdata
+    Extract relevant company data for selected fields (all English keys). If all_fields=True, return all possible fields (Pythonic keys).
     """
-    # Grunnleggende selskapsinformasjon
-    company_name = company.get("navn", "")
-    email = company.get("epostadresse", "")
-    telefon = company.get("telefon", "")
-    mobil = company.get("mobil", "")
-    hjemmeside = company.get("hjemmeside", "")
-    orgnr = company.get("organisasjonsnummer", "")
-    antall_ansatte = company.get("antallAnsatte", "")
-    
-    # Datoer
-    stiftelsesdato = company.get("stiftelsesdato", "")
-    registreringsdato = company.get("registreringsdatoEnhetsregisteret", "")
-    
-    # Adressehåndtering
-    adresse = ""
+    all_data = {
+        "name": company.get("navn", ""),
+        "orgnr": company.get("organisasjonsnummer", ""),
+        "incorporation_date": company.get("stiftelsesdato", ""),
+        "registration_date": company.get("registreringsdatoEnhetsregisteret", ""),
+        "email": company.get("epostadresse", "").lower() if company.get("epostadresse") else "",
+        "phone": company.get("telefon", ""),
+        "mobile": company.get("mobil", ""),
+        "website": company.get("hjemmeside", ""),
+        "address": "",
+        "zipcode": "",
+        "state": "",
+        "street": "",
+        "in_liquidation": bool(company.get("underAvvikling", False)),
+        "employees": company.get("antallAnsatte", "")
+    }
     if company.get("forretningsadresse"):
         adresse_list = company.get("forretningsadresse", {}).get("adresse", [])
         postnr = company.get("forretningsadresse", {}).get("postnummer", "")
         poststed = company.get("forretningsadresse", {}).get("poststed", "")
-        
+        kommune = company.get("forretningsadresse", {}).get("kommune", "")
         if adresse_list:
-            adresse = ", ".join(adresse_list)
+            address = ", ".join(adresse_list)
             if postnr and poststed:
-                adresse += f", {postnr} {poststed}"
-    
-    # Returner formatert data
-    return {
-        "Company Name": company_name,
-        "Org.nr": orgnr,
-        "Stiftelsesdato": stiftelsesdato,
-        "Registreringsdato": registreringsdato,
-        "Email": email.lower() if email else "",
-        "Telefon": telefon,
-        "Mobil": mobil,
-        "Hjemmeside": hjemmeside,
-        "Adresse": adresse,
-        "Ansatte": antall_ansatte
-    }
+                address += f", {postnr} {poststed}"
+            all_data["address"] = address
+            all_data["street"] = ", ".join(adresse_list)
+        all_data["zipcode"] = postnr
+        all_data["state"] = kommune
+    if all_fields:
+        return all_data
+    return {field_map[f]: all_data[f] for f in selected_fields}
 
 
-def save_to_csv(companies_data, output_file):
+def safe_eval_filter(filter_expr, company_dict):
     """
-    Lagrer selskapsdata til CSV-fil.
-    
-    Args:
-        companies_data (list): Liste med ordbøker som inneholder selskapsdata
-        output_file (str): Filnavn for CSV-filen
-    
-    Returns:
-        bool: True hvis vellykket, False ved feil
+    Evaluer filteruttrykket trygt for én bedrift.
+    """
+    allowed_names = {k: v for k, v in company_dict.items()}
+    # Gjør tomme strenger/None til False, alt annet til True for boolske felt
+    for k, v in allowed_names.items():
+        if isinstance(v, str):
+            allowed_names[k] = bool(v.strip())
+        elif v is None:
+            allowed_names[k] = False
+    # Men behold også de opprinnelige verdiene for sammenligning
+    allowed_names.update({f"_{k}": v for k, v in company_dict.items()})
+    # Nå kan man skrive f.eks. email == "ok@test.com" (bruk _email for eksakt verdi)
+    try:
+        return eval(filter_expr, {"__builtins__": {}}, allowed_names)
+    except Exception:
+        return False
+
+
+def save_to_csv(companies_data, output_file, selected_fields, field_map):
+    """
+    Save company data to CSV file (headers in English).
     """
     if not companies_data:
-        print("\nIngen selskaper å lagre.")
+        print("\nNo companies to save.")
         return False
-        
     try:
-        fieldnames = [
-            "Company Name", "Org.nr", "Stiftelsesdato", "Registreringsdato",
-            "Email", "Telefon", "Mobil", "Hjemmeside", "Adresse", "Ansatte"
-        ]
-        
+        fieldnames = [field_map[f] for f in selected_fields]
         with open(output_file, 'w', newline='', encoding='utf-8') as file:
             writer = csv.DictWriter(file, fieldnames=fieldnames)
             writer.writeheader()
             for data in companies_data:
                 writer.writerow(data)
-        
         return True
     except IOError as e:
-        print(f"\nFeil ved lagring av fil: {e}")
+        print(f"\nError saving file: {e}")
         return False
 
 
-def fetch_companies(naeringskode, output_file):
+def fetch_companies(naeringskode, output_file, selected_fields, field_map, limit=None, filter_expr=None):
     """
-    Hovedfunksjon: Henter alle selskaper med spesifisert næringskode og lagrer til CSV.
-    
-    Args:
-        naeringskode (str): Næringskode for selskaper som skal hentes
-        output_file (str): Filnavn for output CSV
+    Main function: Fetch all companies with the specified industry code and save to CSV (English headers).
     """
-    print(f"Starter nedlasting av selskaper med næringskode {naeringskode}...")
-    
-    # Initialiser parametere for API-kall
+    print(f"Starting download of companies with industry code {naeringskode}..." + (f" (limit: {limit})" if limit else ""))
     params = {
         "naeringskode": naeringskode,
         "size": MAX_PAGE_SIZE,
         "page": 0,
     }
-    
-    companies_data = []  # For å samle alle selskaper med kontaktinfo
-    total_seen = 0       # Teller for totalt antall selskapsobjekter
-    page_number = 0      # For å holde styr på sidenummer
-    
+    companies_data = []
+    total_seen = 0
+    page_number = 0
     try:
-        # Start med base URL og API-parametere
         url = API_BASE_URL
         current_params = params
-        
-        # Hent data side for side
         while url:
             data, next_url = fetch_companies_page(url, current_params, page_number)
-            
-            if not data:  # Hvis API-kallet feilet
+            if not data:
                 break
-                
-            # Behandle selskaper fra denne siden
             companies = data.get("_embedded", {}).get("enheter", [])
             for company in companies:
                 total_seen += 1
-                
-                # Ekstraher og behandle selskapsdata
-                company_data = extract_company_data(company)
-                
-                # Lagre bare selskaper med kontaktinformasjon
-                if (company_data["Email"] or company_data["Telefon"] or 
-                    company_data["Mobil"] or company_data["Hjemmeside"]):
+                # For filter: alltid hent alle felter (python keys)
+                company_dict = extract_company_data(company, selected_fields, field_map, all_fields=True)
+                # For CSV: kun valgte felter (engelsk)
+                company_data = {field_map[f]: company_dict[f] for f in selected_fields}
+                include = True
+                if filter_expr:
+                    include = safe_eval_filter(filter_expr, company_dict)
+                if include:
                     companies_data.append(company_data)
-            
-            # Forbered neste side
+                    if limit is not None and len(companies_data) >= limit:
+                        print(f"\nLimit of {limit} companies reached.")
+                        url = None
+                        break
             url = next_url
-            current_params = None  # Parametere er innebygd i neste URL
+            current_params = None
             page_number += 1
-            
-            # Pause for å respektere API-begrensninger
+            if limit is not None and len(companies_data) >= limit:
+                break
             time.sleep(1)
-            
     except Exception as e:
-        print(f"\nEn uventet feil oppstod: {e}")
+        print(f"\nAn unexpected error occurred: {e}")
         import traceback
         traceback.print_exc()
-    
     finally:
-        # Lagre dataene som er samlet inn så langt
-        if save_to_csv(companies_data, output_file):
-            print(f"\nFant {len(companies_data)} selskaper med kontaktinformasjon blant {total_seen} enheter med næringskode {naeringskode}")
-            print(f"Data lagret til {output_file}")
+        if save_to_csv(companies_data, output_file, selected_fields, field_map):
+            print(f"\nFound {len(companies_data)} companies matching filter among {total_seen} entities with industry code {naeringskode}")
+            print(f"Data saved to {output_file}")
         else:
-            print("\nKunne ikke lagre data til fil.")
+            print("\nCould not save data to file.")
 
 
 def main():
@@ -244,10 +283,15 @@ def main():
     try:
         # Parse kommandolinjeargumenter
         args = parse_arguments()
-        
         # Kjør hovedfunksjonen
-        fetch_companies(args.naeringskode, args.output)
-        
+        fetch_companies(
+            args.naeringskode,
+            args.output,
+            args.selected_fields,
+            args.field_map,
+            limit=args.limit,
+            filter_expr=args.filter
+        )
         return 0
     except KeyboardInterrupt:
         print("\nProgrammet ble avbrutt av brukeren.")

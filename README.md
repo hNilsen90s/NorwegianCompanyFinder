@@ -16,6 +16,10 @@ Dette skriptet lar deg hente data om norske selskaper fra Brønnøysundregistere
   - Mobilnummer
   - Hjemmeside
   - Forretningsadresse
+  - Postnummer (zipcode)
+  - Kommune (state)
+  - Gateadresse (street)
+  - Under avvikling (in_liquidation)
   - Antall ansatte
 
 ## Installasjon
@@ -159,6 +163,88 @@ python3 main.py --naeringskode 73.11 --output reklamebyraaer.csv
 
 - `--naeringskode` eller `-n`: Næringskode for selskaper som skal hentes (f.eks. 73.11 for reklamebyrå)
 - `--output` eller `-o`: Navn på output CSV-fil. Standard er [næringskode]_selskaper.csv
+- `--fields` eller `-f`: Kommaseparert liste (på engelsk) over felter som skal inkluderes i CSV-filen. Tilgjengelige felter: `name`, `orgnr`, `incorporation_date`, `registration_date`, `email`, `phone`, `mobile`, `website`, `address`, `zipcode`, `state`, `street`, `in_liquidation`, `employees`. Standard er alle felter.
+- `--limit` eller `-l`: Maksimalt antall selskaper som skal lastes ned (standard: ingen grense)
+- `--filter`: **Avansert:** Filteruttrykk for å kun inkludere selskaper som matcher bestemte kriterier. Se eksempler og forklaring under.
+
+### Fleksibelt filter med --filter
+
+Med flagget `--filter` kan du velge nøyaktig hvilke selskaper som skal inkluderes i CSV-filen basert på feltverdier. Du kan bruke logiske uttrykk (and, or, not), sammenligninger og parenteser.
+
+**Tilgjengelige feltnavn:**
+- name
+- orgnr
+- incorporation_date
+- registration_date
+- email
+- phone
+- mobile
+- website
+- address
+- zipcode
+- state
+- street
+- in_liquidation
+- employees
+
+**Slik fungerer det:**
+- Feltnavn uten sammenligning (f.eks. `email`) betyr "feltet er ikke tomt".
+- Du kan bruke `and`, `or`, `not` og parenteser.
+- For å sjekke eksakt verdi, bruk `==` eller `!=` (f.eks. `email == "ok@test.com"`).
+- For å sjekke tall, kan du bruke `>`, `<`, `>=`, `<=` på f.eks. `employees`.
+- For å sjekke om et felt er tomt, bruk `not` foran feltnavnet (f.eks. `not phone`).
+- For å sammenligne eksakt verdi, bruk understrek: `_email == "ok@test.com"` (avansert, se under).
+- **For dato-feltene `incorporation_date` og `registration_date` kan du bruke sammenligningsoperatorer mot dato-strenger på formatet `yyyy-mm-dd` (f.eks. `registration_date > '2012-12-12'`).**
+
+**Eksempler på bruk:**
+
+- Kun selskaper med e-post og telefonnummer:
+  ```bash
+  python3 main.py --filter "email and phone"
+  ```
+- Kun selskaper med nettside:
+  ```bash
+  python3 main.py --filter "website"
+  ```
+- Kun selskaper med mobilnummer:
+  ```bash
+  python3 main.py --filter "mobile"
+  ```
+- Kun selskaper med e-post, men ikke telefon:
+  ```bash
+  python3 main.py --filter "email and not phone"
+  ```
+- Kun selskaper med ansatte (ansatte-feltet ikke tomt eller null):
+  ```bash
+  python3 main.py --filter "employees"
+  ```
+- Kun selskaper hvor e-post er nøyaktig "ok@test.com":
+  ```bash
+  python3 main.py --filter "email == 'ok@test.com'"
+  ```
+- Kun selskaper stiftet etter 2004:
+  ```bash
+  python3 main.py --filter "incorporation_date > '2004-01-01'"
+  ```
+- Kun selskaper registrert etter 2012-12-12:
+  ```bash
+  python3 main.py --filter "registration_date > '2012-12-12'"
+  ```
+- Kombinere dato med andre filter:
+  ```bash
+  python3 main.py --filter "email and incorporation_date > '2012-12-12'"
+  ```
+- Kombinere flere dato-krav:
+  ```bash
+  python3 main.py --filter "incorporation_date > '2004-01-01' and registration_date > '2012-12-12'"
+  ```
+
+**Tips:**
+- Du kan kombinere flere kriterier med `and`, `or` og parenteser.
+- Alle feltnavn må skrives på engelsk (se listen over).
+- For eksakt sammenligning av tekst, bruk `==` eller `!=`.
+- For å sammenligne tall (f.eks. ansatte): `employees > 10`
+- For å sammenligne eksakt verdi på et felt, bruk understrek: `_email == 'ok@test.com'` (avansert, gir tilgang til råverdien uten boolsk tolkning).
 
 ### Eksempler
 
@@ -176,6 +262,31 @@ Hente dataprogrammering (næringskode 62.01):
 ```bash
 python3 main.py -n 62.01 -o itselskaper.csv
 ```
+
+Hente kun 100 selskaper med alle felter:
+```bash
+python3 main.py --naeringskode 73.11 --limit 100 --output reklamebyra.csv
+```
+
+Hente kun navn, organisasjonsnummer, e-post og nettside for reklamebyrå:
+```bash
+python3 main.py --fields "name,orgnr,email,website" --naeringskode 73.11 --output test_companies.csv
+```
+
+**Filtrere selskaper med filter:**
+
+- Kun selskaper med e-post og telefonnummer:
+  ```bash
+  python3 main.py --filter "email and phone"
+  ```
+- Kun selskaper med nettside:
+  ```bash
+  python3 main.py --filter "website"
+  ```
+- Kun selskaper med e-post, men ikke telefon, og ansatte, og e-post er "ok@test.com":
+  ```bash
+  python3 main.py --filter "email and not phone and employees and email == 'ok@test.com'"
+  ```
 
 ## Vanlige næringskoder
 
@@ -233,4 +344,12 @@ Dette prosjektet er fritt tilgjengelig under MIT-lisensen. Du kan bruke det frit
 
 ## Ansvarsfraskrivelse
 
-Dette skriptet er laget for å forenkle tilgang til offentlig tilgjengelige data. Bruken av data du henter må følge GDPR og annen relevant lovgivning om personvern. 
+Dette skriptet er laget for å forenkle tilgang til offentlig tilgjengelige data. Bruken av data du henter må følge GDPR og annen relevant lovgivning om personvern.
+
+## Endringslogg
+
+- Lagt til `--fields`/`-f` flagg slik at brukere kan velge hvilke kolonner som skal inkluderes i CSV-filen.
+- Alle feltnavn og kolonneoverskrifter i CSV er nå kun på engelsk (ingen norske spesialtegn i output eller argumenter).
+- Lagt til nye felter: `zipcode`, `state`, `street`, `in_liquidation` (hentes fra API).
+- Lagt til `--limit`/`-l` flagg for å begrense antall selskaper som lastes ned.
+- Lagt til `--filter` flagg for fleksibelt og avansert filtrering av selskaper direkte fra kommandolinjen. 
