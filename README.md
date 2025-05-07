@@ -7,20 +7,20 @@ Dette skriptet lar deg hente data om norske selskaper fra Brønnøysundregistere
 - Henter selskapsinformasjon basert på næringskode
 - Lagrer data i CSV-format som lett kan åpnes i Excel eller andre regnearkprogrammer
 - Inkluderer:
-  - Selskapsnavn
-  - Organisasjonsnummer
-  - Stiftelsesdato
-  - Registreringsdato i Enhetsregisteret
-  - E-postadresse
-  - Telefonnummer
-  - Mobilnummer
-  - Hjemmeside
-  - Forretningsadresse
+  - Selskapsnavn (name)
+  - Organisasjonsnummer (orgnr)
+  - Stiftelsesdato (incorporation_date)
+  - Registreringsdato i Enhetsregisteret (registration_date)
+  - E-postadresse (email)
+  - Telefonnummer (phone)
+  - Mobilnummer (mobile)
+  - Hjemmeside (website)
+  - Forretningsadresse (address)
   - Postnummer (zipcode)
   - Kommune (state)
   - Gateadresse (street)
   - Under avvikling (in_liquidation)
-  - Antall ansatte
+  - Antall ansatte (employees)
 
 ## Installasjon
 
