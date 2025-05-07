@@ -176,7 +176,63 @@ python3 main.py --industry 73.11 --output reklamebyraaer.csv
 
 - `--industry` eller `-i`: Industry code for companies to fetch (e.g. 73.11 for advertising agency)
 - `--output` eller `-o`: Navn på output CSV-fil. Standard er [industry]_selskaper.csv
-- `--fields` eller `-f`: Kommaseparert liste (på engelsk) over felter som skal inkluderes i CSV-filen. Tilgjengelige felter: `name`, `orgnr`, `incorporation_date`, `registration_date`, `email`, `phone`, `mobile`, `website`, `address`, `zipcode`, `state`, `street`, `in_liquidation`, `employees`. Standard er alle felter.
+- `--fields` eller `-f`: Kommaseparert liste (på engelsk) over felter som skal inkluderes i CSV-filen.
+
+**Alle tilgjengelige felter for --fields/-f:**
+
+| Felt (engelsk)           | Norsk forklaring                        |
+|-------------------------|-----------------------------------------|
+| name                    | Selskapsnavn                            |
+| orgnr                   | Organisasjonsnummer                     |
+| incorporation_date      | Stiftelsesdato                          |
+| registration_date       | Registreringsdato i Enhetsregisteret     |
+| email                   | E-postadresse                           |
+| phone                   | Telefonnummer                           |
+| mobile                  | Mobilnummer                             |
+| website                 | Hjemmeside                              |
+| address                 | Forretningsadresse                      |
+| zipcode                 | Postnummer                              |
+| state                   | Kommune                                 |
+| street                  | Gateadresse                             |
+| in_liquidation          | Under avvikling (True/False)            |
+| employees               | Antall ansatte                          |
+
+**Finansielle felter (krever --fin/--finance):**
+
+| Felt (engelsk)           | Norsk forklaring                        |
+|-------------------------|-----------------------------------------|
+| revenue                 | Omsetning                               |
+| operating_result        | Driftsresultat                          |
+| net_profit              | Resultat (Årsresultat)                  |
+| total_assets            | Totale eiendeler                        |
+| total_equity            | Egenkapital                             |
+| total_liabilities       | Gjeld                                   |
+| short_term_liabilities  | Kortsiktig gjeld                        |
+| long_term_liabilities   | Langsiktig gjeld                        |
+| retained_earnings       | Opptjent egenkapital                    |
+| contributed_equity      | Innskutt egenkapital                    |
+| current_assets          | Omløpsmidler                            |
+| fixed_assets            | Anleggsmidler                           |
+| net_financial_items     | Netto finansposter                      |
+| financial_income        | Finansinntekter                         |
+| financial_expenses      | Finanskostnader                         |
+| period_start            | Regnskapsperiode start                   |
+| period_end              | Regnskapsperiode slutt                   |
+| year                    | Regnskapsår                             |
+| currency                | Valuta                                  |
+| account_type            | Regnskapstype                           |
+| in_liquidation          | Under avvikling (regnskap)              |
+| small_company           | Små foretak (regnskap)                  |
+| audited                 | Revidert regnskap (True/False)          |
+| profit_margin           | Profit Margin (%)                       |
+| equity_ratio            | Equity Ratio (%)                        |
+| debt_ratio              | Debt Ratio (%)                          |
+| return_on_equity        | Return on Equity (%)                    |
+
+> **Alle feltnavn må spesifiseres på engelsk i --fields.**
+
+Standard er alle vanlige felter hvis du ikke spesifiserer noe.
+
 - `--limit` eller `-l`: Maksimalt antall selskaper som skal lastes ned (standard: ingen grense)
 - `--filter`: **Avansert:** Filteruttrykk for å kun inkludere selskaper som matcher bestemte kriterier. Se eksempler og forklaring under.
 - `--finance` eller `--fin`: Inkluderer finansielle nøkkeltall for hvert selskap (rate-limiter: maks 5 forespørsler/sek). Kun siste rapporterte år hentes for hvert selskap. (`--fin` er en snarvei for `--finance`)
