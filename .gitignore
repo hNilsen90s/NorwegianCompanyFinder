@@ -60,3 +60,4 @@ Thumbs.db
 
 # Electron application directory
 electron-app/ 
+*.csv

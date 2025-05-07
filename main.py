@@ -426,82 +426,134 @@ def fetch_companies(naeringskode, output_file, selected_fields, field_map, limit
                 total_seen += 1
                 company_dict = extract_company_data(company, selected_fields, field_map, all_fields=True)
                 company_data = {field_map[f]: company_dict[f] for f in selected_fields}
-                # Først: filtrer på generelle felter (uten finans)
-                include = True
+
+                pass_preliminary_filter = True
+                has_finance_component_in_filter = False
+
                 if filter_expr:
-                    # Sjekk om filteret inneholder finansielle felter
+                    # Define keywords that indicate a financial part of the filter.
+                    # These should be the base names used in filter expressions (e.g., "net_profit").
                     finance_keywords = [
-                        "net_profit", "revenue", "profit_margin", "equity_ratio", "debt_ratio", "return_on_equity",
-                        "operating_result", "total_assets", "total_equity", "total_liabilities",
+                        "revenue", "operating_result", "net_profit", "total_assets", "total_equity", "total_liabilities",
                         "short_term_liabilities", "long_term_liabilities", "retained_earnings", "contributed_equity",
                         "current_assets", "fixed_assets", "net_financial_items", "financial_income", "financial_expenses",
+                        "profit_margin", "equity_ratio", "debt_ratio", "return_on_equity",
                         "period_start", "period_end", "year", "currency", "account_type", "in_liquidation", "small_company", "audited"
                     ]
-                    finance_in_filter = [f for f in finance_keywords if f in filter_expr]
-                    has_finance = any(finance_in_filter)
-                    if has_finance:
-                        # Del filteret i AND/OR-ledd og ta kun med de uten finansfelter
+                    has_finance_component_in_filter = any(keyword in filter_expr for keyword in finance_keywords)
+
+                    if has_finance_component_in_filter:
+                        # If filter has financial components, try to evaluate non-financial parts first.
+                        # This uses the existing logic (lines 447-460) to build 'general_filter_segment'.
+                        # This reconstruction might be imperfect for very complex filters.
                         clauses = re.split(r'\band\b|\bor\b', filter_expr)
                         ops = re.findall(r'\band\b|\bor\b', filter_expr)
                         general_clauses = []
                         for clause in clauses:
-                            if not any(f in clause for f in finance_keywords):
+                            if not any(f_keyword in clause for f_keyword in finance_keywords):
                                 general_clauses.append(clause.strip())
-                        # Sett sammen igjen med riktige operatorer
+                        
+                        general_filter_segment = ""
                         if general_clauses:
-                            general_filter = general_clauses[0]
-                            op_idx = 0
+                            general_filter_segment = general_clauses[0]
+                            op_idx = 0 # Index for ops list
+                            # The following loop for reconstructing general_filter_segment is from the original code.
+                            # It attempts to piece together general clauses with their original operators.
+                            # This specific logic for choosing ops (esp. `clauses[op_idx].strip() == ''`) can be fragile.
                             for i in range(1, len(general_clauses)):
-                                # Finn neste operator etter forrige clause
-                                while op_idx < len(ops) and clauses[op_idx].strip() == '':
+                                # Attempt to find the correct operator that connected the original clauses
+                                # This part of the original logic is complex and might not always pick the correct operator
+                                # if general clauses are interspersed with financial ones in a non-trivial way.
+                                while op_idx < len(ops) and clauses[op_idx].strip() == '': # Original problematic condition
                                     op_idx += 1
                                 if op_idx < len(ops):
-                                    general_filter += f' {ops[op_idx]} {general_clauses[i]}'
+                                    general_filter_segment += f' {ops[op_idx]} {general_clauses[i]}'
                                     op_idx += 1
-                        else:
-                            general_filter = ''
-                        include = safe_eval_filter(general_filter, company_dict) if general_filter else True
+                                else: # Not enough ops, could happen if filter ends with a general clause
+                                    pass 
+                        
+                        pass_preliminary_filter = safe_eval_filter(general_filter_segment, company_dict) if general_filter_segment else True
                     else:
-                        include = safe_eval_filter(filter_expr, company_dict)
-                if not include:
-                    continue
-                # Hvis --fin og filteret inneholder finansielle felter, hent finansdata og filtrer
-                if finance:
+                        # Filter expression exists but has NO financial components
+                        pass_preliminary_filter = safe_eval_filter(filter_expr, company_dict)
+                
+                if not pass_preliminary_filter:
+                    continue # Skip company if preliminary (general) filter fails
+
+                # At this point, preliminary conditions are met, or there was no relevant preliminary filter.
+                company_fully_meets_criteria = True # Assume true, may be falsified by financial checks
+
+                if finance: # If --fin is active (args.finance)
                     orgnr = company_dict.get("orgnr")
                     fin_data = fetch_latest_financials(orgnr)
+                    
                     if fin_data:
                         fin_data = calculate_financial_ratios(fin_data)
+                        # Add selected or all financial data to company_data (for CSV) and company_dict (for logic)
                         if selected_finance_fields is not None:
-                            for f in selected_finance_fields:
-                                fin_key = f"fin_{f}"
-                                if fin_key in fin_data:
-                                    company_data[fin_key] = fin_data[fin_key]
-                                    company_dict[fin_key] = fin_data[fin_key]
-                        else:
-                            company_data.update(fin_data)
-                            company_dict.update(fin_data)
-                    else:
+                            for f_user_key in selected_finance_fields: # e.g., "net_profit"
+                                internal_fin_key = f"fin_{f_user_key}" # e.g., "fin_net_profit"
+                                if internal_fin_key in fin_data:
+                                    company_data[internal_fin_key] = fin_data[internal_fin_key]
+                                    company_dict[internal_fin_key] = fin_data[internal_fin_key]
+                        else: # Add all fetched financial data
+                            company_data.update(fin_data) # For CSV output (uses fin_ prefix from fin_data)
+                            company_dict.update(fin_data) # For internal logic
+                    else: # No financial data found
                         if selected_finance_fields is not None:
-                            for f in selected_finance_fields:
-                                company_data[f"fin_{f}"] = ""
-                                company_dict[f"fin_{f}"] = ""
-                    # Konverter alle finansielle felter til float hvis mulig
-                    for f in [
-                        "net_profit", "revenue", "profit_margin", "equity_ratio", "debt_ratio", "return_on_equity",
-                        "operating_result", "total_assets", "total_equity", "total_liabilities",
+                            for f_user_key in selected_finance_fields:
+                                internal_fin_key = f"fin_{f_user_key}"
+                                company_data[internal_fin_key] = "" # Ensure CSV column exists if requested
+                                company_dict[internal_fin_key] = "" # Ensure key exists for consistency
+                        # If all finance fields are implicitly requested (selected_finance_fields is None),
+                        # ensure all potential filterable keys get default values in company_dict later if not present.
+
+                    # Convert numeric financial fields in company_dict to float for evaluation.
+                    # Keys like 'net_profit' (without 'fin_') are created/updated here.
+                    # This list should match the finance_keywords that are numeric.
+                    numeric_financial_keywords = [
+                        "revenue", "operating_result", "net_profit", "total_assets", "total_equity", "total_liabilities",
                         "short_term_liabilities", "long_term_liabilities", "retained_earnings", "contributed_equity",
-                        "current_assets", "fixed_assets", "net_financial_items", "financial_income", "financial_expenses"
-                    ]:
-                        fin_key = f"fin_{f}"
-                        if fin_key in company_dict:
+                        "current_assets", "fixed_assets", "net_financial_items", "financial_income", "financial_expenses",
+                        "profit_margin", "equity_ratio", "debt_ratio", "return_on_equity"
+                    ]
+                    for num_fin_keyword in numeric_financial_keywords:
+                        internal_fin_key = f"fin_{num_fin_keyword}"
+                        eval_key = num_fin_keyword # Key used in filter expression, e.g., "net_profit"
+                        
+                        if internal_fin_key in company_dict and company_dict[internal_fin_key] is not None:
                             try:
-                                value = company_dict[fin_key]
-                                if isinstance(value, str):
-                                    value = value.replace(" ", "").replace("\xa0", "")
-                                company_dict[f] = float(value) if str(value).strip() != '' else 0.0
-                            except Exception:
-                                company_dict[f] = 0.0
-                companies_data.append(company_data)
+                                value_str = str(company_dict[internal_fin_key]).replace(" ", "").replace("\xa0", "")
+                                company_dict[eval_key] = float(value_str) if value_str.strip() != '' else 0.0
+                            except (ValueError, TypeError):
+                                company_dict[eval_key] = 0.0
+                        else:
+                            # Ensure the key exists for safe_eval_filter, defaulting to 0.0 if no data.
+                            company_dict[eval_key] = 0.0
+                    
+                    # For non-numeric financial fields (e.g., 'audited', 'small_company') from finance_keywords,
+                    # ensure they are in company_dict if filter uses them.
+                    # `extract_company_data` already handles general fields.
+                    # `fetch_latest_financials` populates `fin_` prefixed keys.
+                    # `safe_eval_filter` can access `fin_audited` if filter explicitly uses `fin_audited`.
+                    # If filter uses `audited`, then `company_dict['audited']` should exist.
+                    # We can populate these from their fin_ counterparts if not already done by numeric loop.
+
+                    # Now, if the original filter had a financial component, evaluate the *full* filter.
+                    if filter_expr and has_finance_component_in_filter:
+                        company_fully_meets_criteria = safe_eval_filter(filter_expr, company_dict)
+                    # If no financial component in filter, criteria remains as per preliminary check (True here).
+                
+                else: # --fin is NOT active (finance is False)
+                    if filter_expr and has_finance_component_in_filter:
+                        # Cannot satisfy a financial filter if financial data is not fetched.
+                        company_fully_meets_criteria = False
+                    # If no financial component, criteria is based on preliminary_pass (True here).
+
+                # Final decision to add the company
+                if company_fully_meets_criteria:
+                    companies_data.append(company_data)
+                
                 if limit is not None and len(companies_data) >= limit:
                     print(f"\nGrense på {limit} selskaper nådd.")
                     url = None
