@@ -177,6 +177,7 @@ python3 main.py --industry 73.11 --output reklamebyraaer.csv
 - `--industry` eller `-i`: Næringskode for selskaper som skal hentes (f.eks. 73.11 for reklamebyrå)
 - `--output` eller `-o`: Navn på output CSV-fil. Standard er [næringskode]_selskaper.csv
 - `--fields` eller `-f`: Kommaseparert liste (på engelsk) over felter som skal inkluderes i CSV-filen.
+- `--finance` eller `--fin`: Inkluderer finansielle nøkkeltall for hvert selskap (ratebegrenset til maks 5 forespørsler/sekund).
 
 **Alle tilgjengelige felter for --fields/-f:**
 
@@ -235,9 +236,6 @@ Standard er alle vanlige felter hvis du ikke spesifiserer noe.
 
 - `--limit` eller `-l`: Maksimalt antall selskaper som skal lastes ned (standard: ingen grense)
 - `--filter`: **Avansert:** Filteruttrykk for å kun inkludere selskaper som matcher bestemte kriterier. Se eksempler og forklaring under.
-- `--finance` eller `--fin`: Inkluderer finansielle nøkkeltall for hvert selskap (rate-limiter: maks 5 forespørsler/sek). Kun siste rapporterte år hentes for hvert selskap. (`--fin` er en snarvei for `--finance`)
-
-> **Merk:** Hvis du spesifiserer finansielle felter i --fields uten å bruke --fin/--finance, vil skriptet automatisk aktivere --fin og vise en melding om dette i konsollen. Dette sikrer at du alltid får ut de feltene du ber om, uten tomme kolonner.
 
 ### Fleksibelt filter med --filter
 
@@ -438,7 +436,4 @@ Dette skriptet er laget for å forenkle tilgang til offentlig tilgjengelige data
 
 - Lagt til `--fields`/`-f` flagg slik at brukere kan velge hvilke kolonner som skal inkluderes i CSV-filen.
 - Alle feltnavn og kolonneoverskrifter i CSV er nå kun på engelsk (ingen norske spesialtegn i output eller argumenter).
-- Lagt til nye felter: `zipcode`, `state`, `street`, `in_liquidation` (hentes fra API).
-- Lagt til `--limit`/`-l` flagg for å begrense antall selskaper som lastes ned.
-- Lagt til `--filter` flagg for fleksibelt og avansert filtrering av selskaper direkte fra kommandolinjen.
-- Lagt til `--finance`/`--fin` flagg for å inkludere finansielle nøkkeltall for hvert selskap.
+- Lagt til nye felter: `
