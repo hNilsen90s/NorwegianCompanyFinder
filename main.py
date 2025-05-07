@@ -12,6 +12,7 @@ import csv
 import argparse
 import sys
 from urllib.parse import urljoin, urlparse, parse_qs
+import re
 
 
 # Constants
@@ -425,40 +426,86 @@ def fetch_companies(naeringskode, output_file, selected_fields, field_map, limit
                 total_seen += 1
                 company_dict = extract_company_data(company, selected_fields, field_map, all_fields=True)
                 company_data = {field_map[f]: company_dict[f] for f in selected_fields}
+                # Først: filtrer på generelle felter (uten finans)
                 include = True
                 if filter_expr:
-                    include = safe_eval_filter(filter_expr, company_dict)
-                if include:
-                    if finance:
-                        orgnr = company_dict.get("orgnr")
-                        fin_data = fetch_latest_financials(orgnr)
-                        if fin_data:
-                            fin_data = calculate_financial_ratios(fin_data)
-                            # Only include requested finance fields if specified
-                            if selected_finance_fields is not None:
-                                for f in selected_finance_fields:
-                                    fin_key = f"fin_{f}"
-                                    if fin_key in fin_data:
-                                        company_data[fin_key] = fin_data[fin_key]
-                            else:
-                                company_data.update(fin_data)
+                    # Sjekk om filteret inneholder finansielle felter
+                    finance_keywords = [
+                        "net_profit", "revenue", "profit_margin", "equity_ratio", "debt_ratio", "return_on_equity",
+                        "operating_result", "total_assets", "total_equity", "total_liabilities",
+                        "short_term_liabilities", "long_term_liabilities", "retained_earnings", "contributed_equity",
+                        "current_assets", "fixed_assets", "net_financial_items", "financial_income", "financial_expenses",
+                        "period_start", "period_end", "year", "currency", "account_type", "in_liquidation", "small_company", "audited"
+                    ]
+                    finance_in_filter = [f for f in finance_keywords if f in filter_expr]
+                    has_finance = any(finance_in_filter)
+                    if has_finance:
+                        # Del filteret i AND/OR-ledd og ta kun med de uten finansfelter
+                        clauses = re.split(r'\band\b|\bor\b', filter_expr)
+                        ops = re.findall(r'\band\b|\bor\b', filter_expr)
+                        general_clauses = []
+                        for clause in clauses:
+                            if not any(f in clause for f in finance_keywords):
+                                general_clauses.append(clause.strip())
+                        # Sett sammen igjen med riktige operatorer
+                        if general_clauses:
+                            general_filter = general_clauses[0]
+                            op_idx = 0
+                            for i in range(1, len(general_clauses)):
+                                # Finn neste operator etter forrige clause
+                                while op_idx < len(ops) and clauses[op_idx].strip() == '':
+                                    op_idx += 1
+                                if op_idx < len(ops):
+                                    general_filter += f' {ops[op_idx]} {general_clauses[i]}'
+                                    op_idx += 1
                         else:
-                            # Fill with empty values for all requested fin fields
-                            if selected_finance_fields is not None:
-                                for f in selected_finance_fields:
-                                    company_data[f"fin_{f}"] = ""
-                            else:
-                                for k in [
-                                    "fin_period_start", "fin_period_end", "fin_year", "fin_currency", "fin_account_type", "fin_in_liquidation", "fin_small_company", "fin_audited", "fin_revenue", "fin_operating_result", "fin_net_profit", "fin_total_assets", "fin_total_equity", "fin_total_liabilities", "fin_short_term_liabilities", "fin_long_term_liabilities", "fin_retained_earnings", "fin_contributed_equity", "fin_current_assets", "fin_fixed_assets", "fin_net_financial_items", "fin_financial_income", "fin_financial_expenses",
-                                    "fin_profit_margin", "fin_equity_ratio", "fin_debt_ratio", "fin_return_on_equity"
-                                ]:
-                                    company_data[k] = ""
-                        time.sleep(0.2)  # Rate limit: max 5 requests/sec
-                    companies_data.append(company_data)
-                    if limit is not None and len(companies_data) >= limit:
-                        print(f"\nGrense på {limit} selskaper nådd.")
-                        url = None
-                        break
+                            general_filter = ''
+                        include = safe_eval_filter(general_filter, company_dict) if general_filter else True
+                    else:
+                        include = safe_eval_filter(filter_expr, company_dict)
+                if not include:
+                    continue
+                # Hvis --fin og filteret inneholder finansielle felter, hent finansdata og filtrer
+                if finance:
+                    orgnr = company_dict.get("orgnr")
+                    fin_data = fetch_latest_financials(orgnr)
+                    if fin_data:
+                        fin_data = calculate_financial_ratios(fin_data)
+                        if selected_finance_fields is not None:
+                            for f in selected_finance_fields:
+                                fin_key = f"fin_{f}"
+                                if fin_key in fin_data:
+                                    company_data[fin_key] = fin_data[fin_key]
+                                    company_dict[fin_key] = fin_data[fin_key]
+                        else:
+                            company_data.update(fin_data)
+                            company_dict.update(fin_data)
+                    else:
+                        if selected_finance_fields is not None:
+                            for f in selected_finance_fields:
+                                company_data[f"fin_{f}"] = ""
+                                company_dict[f"fin_{f}"] = ""
+                    # Konverter alle finansielle felter til float hvis mulig
+                    for f in [
+                        "net_profit", "revenue", "profit_margin", "equity_ratio", "debt_ratio", "return_on_equity",
+                        "operating_result", "total_assets", "total_equity", "total_liabilities",
+                        "short_term_liabilities", "long_term_liabilities", "retained_earnings", "contributed_equity",
+                        "current_assets", "fixed_assets", "net_financial_items", "financial_income", "financial_expenses"
+                    ]:
+                        fin_key = f"fin_{f}"
+                        if fin_key in company_dict:
+                            try:
+                                value = company_dict[fin_key]
+                                if isinstance(value, str):
+                                    value = value.replace(" ", "").replace("\xa0", "")
+                                company_dict[f] = float(value) if str(value).strip() != '' else 0.0
+                            except Exception:
+                                company_dict[f] = 0.0
+                companies_data.append(company_data)
+                if limit is not None and len(companies_data) >= limit:
+                    print(f"\nGrense på {limit} selskaper nådd.")
+                    url = None
+                    break
             url = next_url
             current_params = None
             page_number += 1
