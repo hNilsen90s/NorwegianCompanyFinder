@@ -14,7 +14,7 @@ import sys
 from urllib.parse import urljoin, urlparse, parse_qs
 
 
-# Konstanter
+# Constants
 API_BASE_URL = "https://data.brreg.no/enhetsregisteret/api/enheter"
 DEFAULT_INDUSTRY_CODE = "73.11"  # Reklamebyrå som standard
 MAX_PAGE_SIZE = 1000  # Maksimalt antall selskaper per API-kall
@@ -70,7 +70,7 @@ def parse_arguments():
     
     args = parser.parse_args()
     
-    # Bruk standard filnavn hvis ikke spesifisert
+    # Use default filename if not specified
     if not args.output:
         args.output = f"{args.naeringskode.replace('.', '_')}_selskaper.csv"
 
@@ -93,10 +93,10 @@ def parse_arguments():
     }
     default_fields = list(field_map.keys())
 
-    # Håndter --fields
+    # Handle --fields
     if args.fields:
         requested = [f.strip().lower() for f in args.fields.split(",") if f.strip()]
-        # Filtrer ut ugyldige felter
+        # Filter out invalid fields
         selected_fields = [f for f in requested if f in field_map]
         if not selected_fields:
             print(f"Ingen gyldige felter valgt i --fields. Tilgjengelige: {', '.join(field_map.keys())}")
@@ -111,15 +111,15 @@ def parse_arguments():
 
 def fetch_companies_page(url, params=None, page_number=0):
     """
-    Henter en side med selskapsdata fra API-et.
+    Fetch a page of company data from the API.
     
     Args:
-        url (str): API-URL som skal hentes data fra
-        params (dict, optional): Forespørselsparametere (for første kall)
-        page_number (int): Sidenummer som hentes
+        url (str): API URL to fetch data from
+        params (dict, optional): Request parameters (for first call)
+        page_number (int): Page number being fetched
     
     Returns:
-        tuple: (data, next_url) der data er JSON-responsen og next_url er lenken til neste side
+        tuple: (data, next_url) where data is the JSON response and next_url is the link to the next page
     """
     headers = {"Accept": "application/json"}
     
@@ -129,7 +129,7 @@ def fetch_companies_page(url, params=None, page_number=0):
         response.raise_for_status()
         data = response.json()
         
-        # Sjekk om responsen inneholder enheter
+        # Check if response contains companies
         companies = data.get("_embedded", {}).get("enheter", [])
         if not companies:
             print(" Ingen flere selskaper funnet.")
@@ -137,7 +137,7 @@ def fetch_companies_page(url, params=None, page_number=0):
             
         print(f" Lastet ned {len(companies)} selskaper.")
         
-        # Finn lenke til neste side
+        # Find link to next page
         next_url = data.get("_links", {}).get("next", {}).get("href")
         return data, next_url
         
@@ -186,18 +186,18 @@ def extract_company_data(company, selected_fields, field_map, all_fields=False):
 
 def safe_eval_filter(filter_expr, company_dict):
     """
-    Evaluer filteruttrykket trygt for én bedrift.
+    Safely evaluate the filter expression for a single company.
     """
     allowed_names = {k: v for k, v in company_dict.items()}
-    # Gjør tomme strenger/None til False, alt annet til True for boolske felt
+    # Convert empty strings/None to False, everything else to True for boolean fields
     for k, v in allowed_names.items():
         if isinstance(v, str):
             allowed_names[k] = bool(v.strip())
         elif v is None:
             allowed_names[k] = False
-    # Men behold også de opprinnelige verdiene for sammenligning
+    # But also keep the original values for comparison
     allowed_names.update({f"_{k}": v for k, v in company_dict.items()})
-    # Nå kan man skrive f.eks. email == "ok@test.com" (bruk _email for eksakt verdi)
+    # Now you can write e.g. email == "ok@test.com" (use _email for exact value)
     try:
         return eval(filter_expr, {"__builtins__": {}}, allowed_names)
     except Exception:
@@ -247,9 +247,9 @@ def fetch_companies(naeringskode, output_file, selected_fields, field_map, limit
             companies = data.get("_embedded", {}).get("enheter", [])
             for company in companies:
                 total_seen += 1
-                # For filter: alltid hent alle felter (python keys)
+                # For filter: always fetch all fields (python keys)
                 company_dict = extract_company_data(company, selected_fields, field_map, all_fields=True)
-                # For CSV: kun valgte felter (engelsk)
+                # For CSV: only selected fields (English)
                 company_data = {field_map[f]: company_dict[f] for f in selected_fields}
                 include = True
                 if filter_expr:
@@ -279,11 +279,11 @@ def fetch_companies(naeringskode, output_file, selected_fields, field_map, limit
 
 
 def main():
-    """Hovedfunksjon som kjører programmet."""
+    """Main function that runs the program."""
     try:
-        # Parse kommandolinjeargumenter
+        # Parse command line arguments
         args = parse_arguments()
-        # Kjør hovedfunksjonen
+        # Run main function
         fetch_companies(
             args.naeringskode,
             args.output,
