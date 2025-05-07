@@ -434,6 +434,14 @@ Dette skriptet er laget for å forenkle tilgang til offentlig tilgjengelige data
 
 ## Endringslogg
 
-- Lagt til `--fields`/`-f` flagg slik at brukere kan velge hvilke kolonner som skal inkluderes i CSV-filen.
-- Alle feltnavn og kolonneoverskrifter i CSV er nå kun på engelsk (ingen norske spesialtegn i output eller argumenter).
-- Lagt til nye felter: `
+- Alle konsollutskrifter (print-meldinger) er nå på norsk.
+- All beskrivende tekst og brukerveiledning i README er nå på norsk.
+- Fullstendig og oppdatert tabell over alle tilgjengelige felter for --fields/-f, inkludert finansielle felter, med forklaring på norsk.
+- Nytt --filter-argument for avansert og fleksibel filtrering direkte fra kommandolinjen (inkludert støtte for dato, tall, tekst og boolsk logikk).
+- Eksempler og dokumentasjon for --filter og avanserte filteruttrykk.
+- Endret --naeringskode til --industry som hovedflagg (med -i som kortflagg), men bakoverkompatibilitet er beholdt.
+- Forbedret og utvidet installasjonsveiledning for alle plattformer (Windows, macOS, Linux).
+- Oppdatert og utvidet seksjon for vanlige næringskoder.
+- Forbedret feilsøkingsseksjon og tips for bruk av dataene.
+- Oppdatert .gitignore for å ekskludere flere irrelevante filer og kataloger.
+- Diverse småforbedringer i dokumentasjon, eksempler og struktur.
