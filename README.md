@@ -21,6 +21,19 @@ Dette skriptet lar deg hente data om norske selskaper fra Brønnøysundregistere
   - Gateadresse (street)
   - Under avvikling (in_liquidation)
   - Antall ansatte (employees)
+  - **Finansielle nøkkeltall** (hvis du bruker --finance):
+    - Omsetning (Revenue)
+    - Resultat (Net Profit)
+    - Totale eiendeler (Total Assets)
+    - Egenkapital (Total Equity)
+    - Gjeld (Total Liabilities)
+    - ...og flere rå finansielle felter
+    - **Beregnete nøkkeltall:**
+      - Profit Margin (%)
+      - Equity Ratio (%)
+      - Debt Ratio (%)
+      - Return on Equity (%)
+    - Alle finansielle tall er formatert med tusenskilletegn og uten unødvendig desimaler for heltall.
 
 ## Installasjon
 
@@ -166,6 +179,9 @@ python3 main.py --industry 73.11 --output reklamebyraaer.csv
 - `--fields` eller `-f`: Kommaseparert liste (på engelsk) over felter som skal inkluderes i CSV-filen. Tilgjengelige felter: `name`, `orgnr`, `incorporation_date`, `registration_date`, `email`, `phone`, `mobile`, `website`, `address`, `zipcode`, `state`, `street`, `in_liquidation`, `employees`. Standard er alle felter.
 - `--limit` eller `-l`: Maksimalt antall selskaper som skal lastes ned (standard: ingen grense)
 - `--filter`: **Avansert:** Filteruttrykk for å kun inkludere selskaper som matcher bestemte kriterier. Se eksempler og forklaring under.
+- `--finance` eller `--fin`: Inkluderer finansielle nøkkeltall for hvert selskap (rate-limiter: maks 5 forespørsler/sek). Kun siste rapporterte år hentes for hvert selskap. (`--fin` er en snarvei for `--finance`)
+
+> **Merk:** Hvis du spesifiserer finansielle felter i --fields uten å bruke --fin/--finance, vil skriptet automatisk aktivere --fin og vise en melding om dette i konsollen. Dette sikrer at du alltid får ut de feltene du ber om, uten tomme kolonner.
 
 ### Fleksibelt filter med --filter
 
@@ -186,6 +202,13 @@ Med flagget `--filter` kan du velge nøyaktig hvilke selskaper som skal inkluder
 - street
 - in_liquidation
 - employees
+
+**Merk:** Flagget `--fin` (eller `--finance`) er ikke et filterbart felt. Men når du bruker `--fin`, kan du også filtrere på finansielle felter som `net_profit`, `revenue`, `profit_margin`, `equity_ratio`, osv. Se eksempler nedenfor.
+
+**Eksempel på filter med finansielt felt:**
+```bash
+python3 main.py --fin --filter "net_profit > 1000000"
+```
 
 **Slik fungerer det:**
 - Feltnavn uten sammenligning (f.eks. `email`) betyr "feltet er ikke tomt".
@@ -253,22 +276,32 @@ Hente reklamebyrå (standard):
 python3 main.py
 ```
 
-Hente regnskapskontor (industry code 69.201):
+Hente reklamebyrå med finansielle nøkkeltall:
 ```bash
-python3 main.py --industry 69.201 --output regnskapsbyra.csv
+python3 main.py --fin
 ```
 
-Hente dataprogrammering (industry code 62.01):
+Hente reklamebyrå med finansielle nøkkeltall og maks 10 selskaper:
 ```bash
-python3 main.py -i 62.01 -o itselskaper.csv
+python3 main.py --industry 73.11 --limit 10 --fin
 ```
 
-Hente kun 100 selskaper med alle felter:
+Hente regnskapskontor (industry code 69.201) med finansielle nøkkeltall:
 ```bash
-python3 main.py --industry 73.11 --limit 100 --output reklamebyra.csv
+python3 main.py --industry 69.201 --fin --output regnskapsbyra.csv
 ```
 
-Hente kun navn, organisasjonsnummer, e-post og nettside for reklamebyrå:
+Hente dataprogrammering (industry code 62.01) med finansielle nøkkeltall:
+```bash
+python3 main.py -i 62.01 --fin -o itselskaper.csv
+```
+
+Hente kun 100 selskaper med alle felter og finansielle nøkkeltall:
+```bash
+python3 main.py --industry 73.11 --limit 100 --fin --output reklamebyra.csv
+```
+
+Hente kun navn, organisasjonsnummer, e-post og nettside for reklamebyrå (uten finans):
 ```bash
 python3 main.py --fields "name,orgnr,email,website" --industry 73.11 --output test_companies.csv
 ```
@@ -277,14 +310,14 @@ Se seksjonen "Fleksibelt filter med --filter" over for avanserte filter-eksemple
 
 #### Avanserte eksempler
 
-**Eksempel 1: Hent regnskapskontor med ansatte, e-post, nettside, ikke under avvikling, stiftet etter 2010, kun utvalgte felter, maks 5 selskaper**
+**Eksempel 1: Hent regnskapskontor med ansatte, e-post, nettside, ikke under avvikling, stiftet etter 2010, kun utvalgte felter, maks 5 selskaper, med finansielle nøkkeltall**
 ```bash
-python3 main.py --industry 69.201 --fields "name,orgnr,email,website,employees,incorporation_date" --filter "employees and email and website and not in_liquidation and incorporation_date > '2010-01-01'" --limit 5 --output regnskapskontor_etter2010.csv
+python3 main.py --industry 69.201 --fields "name,orgnr,email,website,employees,incorporation_date" --filter "employees and email and website and not in_liquidation and incorporation_date > '2010-01-01'" --limit 5 --fin --output regnskapskontor_etter2010.csv
 ```
 
-**Eksempel 2: Hent IT-selskaper (62.01) med mobilnummer, registrert etter 2015, og hvor e-post ikke er tom, maks 3 selskaper**
+**Eksempel 2: Hent IT-selskaper (62.01) med mobilnummer, registrert etter 2015, hvor e-post ikke er tom, maks 3 selskaper, med finansielle nøkkeltall**
 ```bash
-python3 main.py --industry 62.01 --fields "name,orgnr,mobile,email,registration_date" --filter "mobile and email and registration_date > '2015-01-01'" --limit 3 --output it_selskaper_nye.csv
+python3 main.py --industry 62.01 --fields "name,orgnr,mobile,email,registration_date" --filter "mobile and email and registration_date > '2015-01-01'" --limit 3 --fin --output it_selskaper_nye.csv
 ```
 
 ## Vanlige næringskoder
@@ -351,4 +384,5 @@ Dette skriptet er laget for å forenkle tilgang til offentlig tilgjengelige data
 - Alle feltnavn og kolonneoverskrifter i CSV er nå kun på engelsk (ingen norske spesialtegn i output eller argumenter).
 - Lagt til nye felter: `zipcode`, `state`, `street`, `in_liquidation` (hentes fra API).
 - Lagt til `--limit`/`-l` flagg for å begrense antall selskaper som lastes ned.
-- Lagt til `--filter` flagg for fleksibelt og avansert filtrering av selskaper direkte fra kommandolinjen. 
+- Lagt til `--filter` flagg for fleksibelt og avansert filtrering av selskaper direkte fra kommandolinjen.
+- Lagt til `--finance`/`--fin` flagg for å inkludere finansielle nøkkeltall for hvert selskap.
