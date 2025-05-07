@@ -161,7 +161,7 @@ python3 main.py --industry 73.11 --output reklamebyraaer.csv
 
 ### Parametere
 
-- `--industry` eller `-n`: Industry code for companies to fetch (e.g. 73.11 for advertising agency)
+- `--industry` eller `-i`: Industry code for companies to fetch (e.g. 73.11 for advertising agency)
 - `--output` eller `-o`: Navn på output CSV-fil. Standard er [industry]_selskaper.csv
 - `--fields` eller `-f`: Kommaseparert liste (på engelsk) over felter som skal inkluderes i CSV-filen. Tilgjengelige felter: `name`, `orgnr`, `incorporation_date`, `registration_date`, `email`, `phone`, `mobile`, `website`, `address`, `zipcode`, `state`, `street`, `in_liquidation`, `employees`. Standard er alle felter.
 - `--limit` eller `-l`: Maksimalt antall selskaper som skal lastes ned (standard: ingen grense)
@@ -260,7 +260,7 @@ python3 main.py --industry 69.201 --output regnskapsbyra.csv
 
 Hente dataprogrammering (industry code 62.01):
 ```bash
-python3 main.py -n 62.01 -o itselskaper.csv
+python3 main.py -i 62.01 -o itselskaper.csv
 ```
 
 Hente kun 100 selskaper med alle felter:
